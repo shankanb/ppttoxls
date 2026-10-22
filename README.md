@@ -84,11 +84,13 @@ ppttoxls/
 
 ---
 
-## 🚀 Quickstart Guide
+## 🚀 Quickstart Guide (Running After Cloning)
 
-### 1. Prerequisites
-- Python 3.10+ (tested on Python 3.13)
-- Windows / macOS / Linux
+### 1. Clone the Repository
+```powershell
+git clone <YOUR_GITHUB_REPO_URL>
+cd ppttoxls
+```
 
 ### 2. Virtual Environment Setup
 Create and activate your virtual environment:
@@ -112,6 +114,15 @@ pip install -r requirements.txt
 ### 4. Configure API Key
 Copy `.env.example` to `.env` and insert your Google Gemini API key:
 
+```powershell
+# On Windows PowerShell:
+Copy-Item .env.example .env
+
+# On macOS/Linux:
+cp .env.example .env
+```
+
+Open `.env` and set your key:
 ```ini
 GEMINI_API_KEY=AIzaSy...your_gemini_api_key_here
 DJANGO_SECRET_KEY=django-insecure-ppt-to-xls-converter-poc-key-2025
