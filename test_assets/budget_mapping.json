@@ -1,0 +1,126 @@
+{
+  "title": "Corporate Budget Plan Export",
+  "sheets": [
+    {
+      "name": "Budget_Summary",
+      "styles": {
+        "title": {
+          "font": "Segoe UI",
+          "size": 14,
+          "bold": true,
+          "font_color": "#1F4E78"
+        },
+        "label": {
+          "font": "Segoe UI",
+          "size": 11,
+          "bold": true,
+          "font_color": "#333333",
+          "align": "left"
+        },
+        "header": {
+          "font": "Segoe UI",
+          "size": 11,
+          "bold": true,
+          "bg_color": "#2F5597",
+          "font_color": "#FFFFFF",
+          "align": "center",
+          "border": "thin"
+        },
+        "currency": {
+          "font": "Segoe UI",
+          "size": 11,
+          "num_format": "$#,##0",
+          "align": "right",
+          "border": "thin"
+        },
+        "integer": {
+          "font": "Segoe UI",
+          "size": 11,
+          "num_format": "#,##0",
+          "align": "center",
+          "border": "thin"
+        },
+        "text": {
+          "font": "Segoe UI",
+          "size": 11,
+          "align": "left",
+          "border": "thin"
+        }
+      },
+      "cells": [
+        {
+          "cell": "B2",
+          "key": "fiscal_year",
+          "type": "string",
+          "description": "Fiscal year identifier, e.g. FY2025",
+          "style": "text",
+          "label": "Fiscal Year:",
+          "label_cell": "A2",
+          "label_style": "label"
+        },
+        {
+          "cell": "B3",
+          "key": "total_budget",
+          "type": "number",
+          "description": "Total approved expenditure or authorized budget across company",
+          "style": "currency",
+          "label": "Total Approved Budget:",
+          "label_cell": "A3",
+          "label_style": "label"
+        },
+        {
+          "cell": "B4",
+          "key": "headcount",
+          "type": "integer",
+          "description": "Total approved headcount or FTE count target",
+          "style": "integer",
+          "label": "Target Headcount (FTEs):",
+          "label_cell": "A4",
+          "label_style": "label"
+        }
+      ],
+      "tables": [
+        {
+          "key": "departments",
+          "start_cell": "A7",
+          "description": "Departmental breakdown of planned spend and Q1 actuals",
+          "columns": [
+            {
+              "header": "Department",
+              "key": "dept_name",
+              "type": "string",
+              "style": "text",
+              "header_style": "header",
+              "width": 25
+            },
+            {
+              "header": "Planned Budget",
+              "key": "planned",
+              "type": "number",
+              "style": "currency",
+              "header_style": "header",
+              "width": 20
+            },
+            {
+              "header": "Q1 Actual",
+              "key": "actual",
+              "type": "number",
+              "style": "currency",
+              "header_style": "header",
+              "width": 20
+            },
+            {
+              "header": "Remaining Budget",
+              "key": "remaining",
+              "type": "formula",
+              "formula": "={planned}-{actual}",
+              "style": "currency",
+              "header_style": "header",
+              "width": 22
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

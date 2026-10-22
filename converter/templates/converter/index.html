@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT to XLS Converter | Deterministic AI Engine</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        .hero { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white; padding: 2.5rem 0; margin-bottom: 2rem; border-radius: 0 0 1rem 1rem; }
+        .card { border: none; border-radius: 0.75rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05); }
+        .card-header { background: white; font-weight: 600; border-bottom: 1px solid #f1f5f9; padding: 1rem 1.25rem; }
+        .code-preview { background-color: #0f172a; color: #38bdf8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85rem; border-radius: 0.5rem; max-height: 380px; overflow-y: auto; padding: 1rem; }
+        .btn-primary { background-color: #2563eb; border-color: #2563eb; }
+        .btn-primary:hover { background-color: #1d4ed8; }
+        .nav-tabs .nav-link { color: #64748b; font-weight: 500; }
+        .nav-tabs .nav-link.active { color: #1e3a8a; font-weight: 600; border-bottom: 2px solid #2563eb; }
+    </style>
+</head>
+<body>
+
+    <!-- Header Banner -->
+    <header class="hero shadow-sm">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 fw-bold mb-1"><i class="bi bi-file-earmark-spreadsheet me-2"></i>PPT to XLS Deterministic Converter</h1>
+                    <p class="mb-0 text-white-50">Powered by Gemini AI Semantic Extraction + openpyxl Deterministic Formatting</p>
+                </div>
+                <div>
+                    {% if has_api_key %}
+                        <span class="badge bg-success-subtle text-success border border-success px-3 py-2">
+                            <i class="bi bi-check-circle-fill me-1"></i> Gemini API Key Loaded ({{ masked_key }})
+                        </span>
+                    {% else %}
+                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-3 py-2">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> API Key Not Configured (Demo Mode Ready)
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container pb-5">
+        <div class="row g-4">
+            
+            <!-- Left Column: Controls & Inputs -->
+            <div class="col-lg-5">
+                <div class="card mb-4">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-sliders me-2 text-primary"></i>Input Source</span>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-primary active" id="btn-mode-demo" onclick="switchMode('demo')">Demo Mode</button>
+                            <button type="button" class="btn btn-outline-primary" id="btn-mode-custom" onclick="switchMode('custom')">Custom Upload</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        
+                        <form id="convert-form" onsubmit="handleConvert(event)">
+                            <input type="hidden" id="use_demo" name="use_demo" value="standard">
+
+                            <!-- Demo Mode Options -->
+                            <div id="demo-section">
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold">Select Test Presentation Deck:</label>
+                                    <div class="form-check p-2 border rounded mb-2 bg-light">
+                                        <input class="form-check-input ms-1 me-2" type="radio" name="demo_deck_choice" id="demo_std" value="standard" checked onchange="document.getElementById('use_demo').value='standard'">
+                                        <label class="form-check-label" for="demo_std">
+                                            <strong>Standard Corporate Deck</strong>
+                                            <div class="small text-muted">Blue corporate theme, standard bullets, standard table.</div>
+                                        </label>
+                                    </div>
+                                    <div class="form-check p-2 border rounded bg-light">
+                                        <input class="form-check-input ms-1 me-2" type="radio" name="demo_deck_choice" id="demo_var" value="variant" onchange="document.getElementById('use_demo').value='variant'">
+                                        <label class="form-check-label" for="demo_var">
+                                            <strong>Variant Styled Deck (Tests Determinism!)</strong>
+                                            <div class="small text-muted">Different fonts (Georgia), card shapes, reversed column order, same data.</div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Custom Upload Options -->
+                            <div id="custom-section" style="display: none;">
+                                <div class="mb-3">
+                                    <label for="ppt_file" class="form-label fw-semibold">PowerPoint Presentation (.pptx):</label>
+                                    <input class="form-control" type="file" id="ppt_file" name="ppt_file" accept=".pptx">
+                                    <div class="form-text">Upload any slide presentation containing your metrics or tables.</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="mapping_file" class="form-label fw-semibold">Mapping Schema File (.json, optional):</label>
+                                    <input class="form-control" type="file" id="mapping_file" name="mapping_file" accept=".json" onchange="loadMappingFile(this)">
+                                    <div class="form-text">Or edit the JSON mapping configuration directly below.</div>
+                                </div>
+                            </div>
+
+                            <!-- JSON Mapping Editor -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label for="mapping_text" class="form-label fw-semibold mb-0">JSON Mapping Schema:</label>
+                                    <button type="button" class="btn btn-sm btn-link text-decoration-none p-0" onclick="resetDemoMapping()">Reset Demo Schema</button>
+                                </div>
+                                <textarea class="form-control font-monospace" id="mapping_text" name="mapping_text" rows="8" style="font-size: 0.82rem;"></textarea>
+                            </div>
+
+                            <!-- API Key override field -->
+                            <div class="mb-3">
+                                <label for="api_key" class="form-label fw-semibold">Gemini API Key (Optional Override):</label>
+                                <input type="password" class="form-control" id="api_key" name="api_key" placeholder="Enter key to override .env configuration">
+                                <div class="form-text">Leave blank to use the key defined in your <code>.env</code> file.</div>
+                            </div>
+
+                            <button type="submit" id="submit-btn" class="btn btn-primary w-100 py-2 fw-semibold">
+                                <i class="bi bi-play-circle-fill me-2"></i>Convert Presentation to Excel
+                            </button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Results & Interactive Preview -->
+            <div class="col-lg-7">
+                
+                <!-- Loading State -->
+                <div id="loading-spinner" class="card text-center p-5 mb-4" style="display: none;">
+                    <div class="spinner-border text-primary mx-auto mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                    <h5 class="fw-bold">Processing Presentation...</h5>
+                    <p class="text-muted mb-0">1. Extracting text & tables with python-pptx<br>2. Semantic reasoning & normalization via Gemini<br>3. Enforcing pixel-perfect Excel formatting via openpyxl</p>
+                </div>
+
+                <!-- Error Notice -->
+                <div id="error-alert" class="alert alert-danger" style="display: none;" role="alert">
+                    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Conversion Error</h5>
+                    <p id="error-message" class="mb-0"></p>
+                </div>
+
+                <!-- Fallback Info Notice -->
+                <div id="demo-notice" class="alert alert-info py-2" style="display: none;">
+                    <i class="bi bi-info-circle-fill me-1"></i>
+                    <strong>Demo Mode Note:</strong> Using pre-validated extraction payload because <code>GEMINI_API_KEY</code> is not yet configured in <code>.env</code>. The Excel layout, formulas, and styles are 100% freshly rendered by <code>openpyxl</code>.
+                </div>
+
+                <!-- Results Card -->
+                <div id="results-card" class="card mb-4" style="display: none;">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                        <span class="text-success fw-bold"><i class="bi bi-check-circle-fill me-2"></i>Conversion Complete!</span>
+                        <a id="download-btn" href="#" class="btn btn-success fw-semibold">
+                            <i class="bi bi-download me-2"></i>Download Excel (.xlsx)
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        
+                        <!-- Nav Tabs -->
+                        <ul class="nav nav-tabs mb-3" id="resultTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="tab-data" data-bs-toggle="tab" data-bs-target="#panel-data" type="button">
+                                    <i class="bi bi-table me-1"></i> Extracted Data Preview
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab-slides" data-bs-toggle="tab" data-bs-target="#panel-slides" type="button">
+                                    <i class="bi bi-file-text me-1"></i> PPT Raw Content
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab-json" data-bs-toggle="tab" data-bs-target="#panel-json" type="button">
+                                    <i class="bi bi-code-slash me-1"></i> Normalized JSON
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Tab Content -->
+                        <div class="tab-content">
+                            <!-- Data Preview Tab -->
+                            <div class="tab-pane fade show active" id="panel-data">
+                                <div id="preview-summary" class="mb-4"></div>
+                                <h6 class="fw-bold mb-2">Department Table Data</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover align-middle" id="preview-table">
+                                        <thead class="table-primary">
+                                            <tr>
+                                                <th>Department</th>
+                                                <th>Planned Budget</th>
+                                                <th>Q1 Actual</th>
+                                                <th>Remaining (Formula: Planned - Actual)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="preview-table-body"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Slides Content Tab -->
+                            <div class="tab-pane fade" id="panel-slides">
+                                <pre class="code-preview" id="preview-deck-text"></pre>
+                            </div>
+
+                            <!-- JSON Tab -->
+                            <div class="tab-pane fade" id="panel-json">
+                                <pre class="code-preview" id="preview-json-text"></pre>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Explanation Helper Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-lightbulb-fill text-warning me-2"></i>How Determinism is Guaranteed
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded h-100 bg-white">
+                                    <h6 class="fw-bold text-primary mb-1">1. LLM Semantic Invariance</h6>
+                                    <p class="small text-muted mb-0">Gemini runs with <code>temperature=0.0</code> and structured output. Whether Slide 3 is formatted as a table or floating cards, Gemini extracts the identical clean numbers.</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 border rounded h-100 bg-white">
+                                    <h6 class="fw-bold text-success mb-1">2. Python Strict Formatting</h6>
+                                    <p class="small text-muted mb-0"><code>openpyxl</code> strictly executes the styles (Segoe UI, colors, $#,##0, borders) defined in your JSON mapping. The LLM never touches formatting or formulas.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let demoMappingContent = "";
+
+        // Load demo assets on startup
+        window.addEventListener("DOMContentLoaded", () => {
+            fetch("/load-demo/")
+                .then(res => res.json())
+                .then(data => {
+                    if (data.mapping_json) {
+                        demoMappingContent = data.mapping_json;
+                        document.getElementById("mapping_text").value = demoMappingContent;
+                    }
+                })
+                .catch(err => console.error("Error loading demo:", err));
+        });
+
+        function switchMode(mode) {
+            if (mode === "demo") {
+                document.getElementById("btn-mode-demo").classList.add("active");
+                document.getElementById("btn-mode-custom").classList.remove("active");
+                document.getElementById("demo-section").style.display = "block";
+                document.getElementById("custom-section").style.display = "none";
+                document.getElementById("use_demo").value = document.querySelector('input[name="demo_deck_choice"]:checked').value;
+            } else {
+                document.getElementById("btn-mode-custom").classList.add("active");
+                document.getElementById("btn-mode-demo").classList.remove("active");
+                document.getElementById("demo-section").style.display = "none";
+                document.getElementById("custom-section").style.display = "block";
+                document.getElementById("use_demo").value = "";
+            }
+        }
+
+        function resetDemoMapping() {
+            if (demoMappingContent) {
+                document.getElementById("mapping_text").value = demoMappingContent;
+            }
+        }
+
+        function loadMappingFile(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById("mapping_text").value = e.target.result;
+                };
+                reader.readAsText(input.files[0]);
+            }
+        }
+
+        async function handleConvert(event) {
+            event.preventDefault();
+            const form = document.getElementById("convert-form");
+            const formData = new FormData(form);
+
+            // UI states
+            document.getElementById("loading-spinner").style.display = "block";
+            document.getElementById("results-card").style.display = "none";
+            document.getElementById("error-alert").style.display = "none";
+            document.getElementById("submit-btn").disabled = true;
+
+            try {
+                const res = await fetch("/convert/", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+
+                if (!res.ok || data.error) {
+                    throw new Error(data.error || "Conversion failed");
+                }
+
+                // Render Results
+                document.getElementById("download-btn").href = data.download_url;
+                document.getElementById("demo-notice").style.display = data.demo_fallback_used ? "block" : "none";
+
+                // Populate Summary
+                const ext = data.extracted_data || {};
+                const summaryHtml = `
+                    <div class="row g-2 mb-3">
+                        <div class="col-4">
+                            <div class="p-2 border rounded bg-light">
+                                <div class="text-muted small">Fiscal Year</div>
+                                <div class="fw-bold">${ext.fiscal_year || 'N/A'}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded bg-light">
+                                <div class="text-muted small">Total Budget</div>
+                                <div class="fw-bold text-primary">$${Number(ext.total_budget || 0).toLocaleString()}</div>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 border rounded bg-light">
+                                <div class="text-muted small">Target Headcount</div>
+                                <div class="fw-bold text-success">${ext.headcount || 0} FTEs</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById("preview-summary").innerHTML = summaryHtml;
+
+                // Populate Table
+                const tbody = document.getElementById("preview-table-body");
+                tbody.innerHTML = "";
+                const depts = ext.departments || [];
+                depts.forEach(d => {
+                    const planned = Number(d.planned || 0);
+                    const actual = Number(d.actual || 0);
+                    const remaining = planned - actual;
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td class="fw-semibold">${d.dept_name || ''}</td>
+                        <td class="text-end font-monospace">$${planned.toLocaleString()}</td>
+                        <td class="text-end font-monospace">$${actual.toLocaleString()}</td>
+                        <td class="text-end font-monospace text-primary fw-bold">$${remaining.toLocaleString()}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                // Previews
+                document.getElementById("preview-deck-text").textContent = data.deck_preview || "";
+                document.getElementById("preview-json-text").textContent = JSON.stringify(ext, null, 2);
+
+                document.getElementById("results-card").style.display = "block";
+
+            } catch (err) {
+                document.getElementById("error-message").textContent = err.message;
+                document.getElementById("error-alert").style.display = "block";
+            } finally {
+                document.getElementById("loading-spinner").style.display = "none";
+                document.getElementById("submit-btn").disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
