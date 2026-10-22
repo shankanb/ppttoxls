@@ -61,16 +61,17 @@ def extract_data_with_llm(
     deck: DeckContent,
     config: MappingConfig,
     api_key: Optional[str] = None,
-    model_name: str = "gemini-2.5-flash",
+    model_name: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Calls Gemini API with temperature=0.0 for deterministic structured extraction.
     """
     final_api_key = api_key or os.getenv("GEMINI_API_KEY", "")
+    final_model = model_name or os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 
     if not final_api_key or "YOUR_GEMINI_API_KEY" in final_api_key:
         raise ValueError(
-            "Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file or pass it to the converter."
+            "Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file."
         )
 
     # Import google-genai
@@ -78,17 +79,33 @@ def extract_data_with_llm(
         from google import genai
         from google.genai import types
 
+        import time
+
         client = genai.Client(api_key=final_api_key)
         prompt = build_extraction_prompt(deck, config)
 
-        response = client.models.generate_content(
-            model=model_name,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                temperature=0.0,
-                response_mime_type="application/json",
-            ),
-        )
+        # Retry logic for transient 503 / rate limit spikes
+        last_exception = None
+        for attempt in range(1, 4):
+            try:
+                response = client.models.generate_content(
+                    model=final_model,
+                    contents=prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.0,
+                        response_mime_type="application/json",
+                    ),
+                )
+                break
+            except Exception as ex:
+                last_exception = ex
+                if "503" in str(ex) or "UNAVAILABLE" in str(ex) or "429" in str(ex):
+                    logger.warning(f"Transient Gemini API error (attempt {attempt}/3): {ex}. Retrying in {attempt * 2}s...")
+                    time.sleep(attempt * 2)
+                else:
+                    raise ex
+        else:
+            raise last_exception
 
         response_text = response.text.strip()
         # Clean any accidental markdown wrap

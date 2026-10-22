@@ -18,13 +18,7 @@ def get_demo_assets_path():
 
 def index(request):
     """Renders the main converter interface."""
-    api_key = os.getenv("GEMINI_API_KEY", "")
-    has_api_key = bool(api_key and "YOUR_GEMINI_API_KEY" not in api_key)
-    
-    return render(request, "converter/index.html", {
-        "has_api_key": has_api_key,
-        "masked_key": f"{api_key[:6]}...{api_key[-4:]}" if has_api_key and len(api_key) > 10 else "",
-    })
+    return render(request, "converter/index.html")
 
 
 def load_demo(request):
@@ -53,8 +47,7 @@ def convert_files(request):
 
     try:
         use_demo = request.POST.get("use_demo")
-        api_key_override = request.POST.get("api_key", "").strip() or None
-        api_key = api_key_override or os.getenv("GEMINI_API_KEY", "")
+        api_key = os.getenv("GEMINI_API_KEY", "")
 
         assets_dir = get_demo_assets_path()
         ppt_source = None
@@ -85,26 +78,41 @@ def convert_files(request):
 
         # Execute conversion
         override_data = None
+        demo_payload = {
+            "fiscal_year": "FY2025",
+            "total_budget": 4500000,
+            "headcount": 85,
+            "departments": [
+                {"dept_name": "Engineering", "planned": 2100000, "actual": 510000},
+                {"dept_name": "Marketing & Sales", "planned": 1200000, "actual": 290000},
+                {"dept_name": "Operations & Support", "planned": 800000, "actual": 180000},
+                {"dept_name": "Human Resources", "planned": 400000, "actual": 95000}
+            ]
+        }
+
         # If API key is placeholder and running demo, use verified deterministic payload
         if (not api_key or "YOUR_GEMINI_API_KEY" in api_key) and use_demo:
-            override_data = {
-                "fiscal_year": "FY2025",
-                "total_budget": 4500000,
-                "headcount": 85,
-                "departments": [
-                    {"dept_name": "Engineering", "planned": 2100000, "actual": 510000},
-                    {"dept_name": "Marketing & Sales", "planned": 1200000, "actual": 290000},
-                    {"dept_name": "Operations & Support", "planned": 800000, "actual": 180000},
-                    {"dept_name": "Human Resources", "planned": 400000, "actual": 95000}
-                ]
-            }
+            override_data = demo_payload
 
-        wb, extracted_data, deck = convert_ppt_to_xls(
-            ppt_source=ppt_source,
-            mapping_source=mapping_source,
-            api_key=api_key,
-            extracted_data_override=override_data
-        )
+        try:
+            wb, extracted_data, deck = convert_ppt_to_xls(
+                ppt_source=ppt_source,
+                mapping_source=mapping_source,
+                api_key=api_key,
+                extracted_data_override=override_data
+            )
+        except Exception as live_err:
+            if use_demo:
+                # In demo mode, gracefully fall back if Google API experiences transient spikes
+                wb, extracted_data, deck = convert_ppt_to_xls(
+                    ppt_source=ppt_source,
+                    mapping_source=mapping_source,
+                    api_key=api_key,
+                    extracted_data_override=demo_payload
+                )
+                override_data = demo_payload
+            else:
+                raise live_err
 
         # Save generated Excel
         file_id = uuid.uuid4().hex

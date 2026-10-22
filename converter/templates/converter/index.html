@@ -28,17 +28,6 @@
                     <h1 class="h3 fw-bold mb-1"><i class="bi bi-file-earmark-spreadsheet me-2"></i>PPT to XLS Deterministic Converter</h1>
                     <p class="mb-0 text-white-50">Powered by Gemini AI Semantic Extraction + openpyxl Deterministic Formatting</p>
                 </div>
-                <div>
-                    {% if has_api_key %}
-                        <span class="badge bg-success-subtle text-success border border-success px-3 py-2">
-                            <i class="bi bi-check-circle-fill me-1"></i> Gemini API Key Loaded ({{ masked_key }})
-                        </span>
-                    {% else %}
-                        <span class="badge bg-warning-subtle text-warning-emphasis border border-warning px-3 py-2">
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i> API Key Not Configured (Demo Mode Ready)
-                        </span>
-                    {% endif %}
-                </div>
             </div>
         </div>
     </header>
@@ -103,13 +92,6 @@
                                     <button type="button" class="btn btn-sm btn-link text-decoration-none p-0" onclick="resetDemoMapping()">Reset Demo Schema</button>
                                 </div>
                                 <textarea class="form-control font-monospace" id="mapping_text" name="mapping_text" rows="8" style="font-size: 0.82rem;"></textarea>
-                            </div>
-
-                            <!-- API Key override field -->
-                            <div class="mb-3">
-                                <label for="api_key" class="form-label fw-semibold">Gemini API Key (Optional Override):</label>
-                                <input type="password" class="form-control" id="api_key" name="api_key" placeholder="Enter key to override .env configuration">
-                                <div class="form-text">Leave blank to use the key defined in your <code>.env</code> file.</div>
                             </div>
 
                             <button type="submit" id="submit-btn" class="btn btn-primary w-100 py-2 fw-semibold">
